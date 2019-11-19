@@ -84,7 +84,7 @@ htm_marg3_popup = paste0('<h2 style="color:#7A7A7A;">',marg3$`Full Name`,'</h2>'
 
 
 ```{r}
-all.marg.html = paste0('<h2 style="color:#7A7A7A;">',grantee$Name,'</h2>', 
+all.marg.html = paste0('<h3 style="color:#7A7A7A;">',grantee$Name,'</h3>', 
        '<p style="color: black;">',
        " From ", grantee$Institution, " in ", grantee$Nationality, 
        " Received Financial support through ", grantee$`Grant Type`," ",
