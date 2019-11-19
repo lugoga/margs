@@ -1,27 +1,14 @@
 ---
-title: "marg_support"
+title: "Interactive Mapping of MARG Grantees"
 author: "Masumbuko Semba"
-date: "11/19/2019"
-output: html_document
+date: ""
+output: 
+  bookdown::html_document2
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
-
-You can read the information from [this link](https://www.jla-data.net/eng/leaflet-in-r-tips-and-tricks/)
-Interactive maps are a powerful visualization tool, and the javascript library leaflet.js is a great means to achieving this objective. The {leaflet} package from RStudio makes this library accessible from R.
-
-The package documentation is good, but as the interactive visualization is usually the last step of a complex process I felt the need to share some of my lessons learned.
-
-For this demonstrations I am using a data frame of Marine Research Grants grantee offered by WIOMSA in diffeent countries withinn the WIO region, but the actual choice of points is not that crucial – what I found nice for demonstration purposes is that:
-
-the MARG support are in two three categories
-can be grouped to three branches of power
-Is for researchers with publications with links to Google scholar
-
-The first step is creating the the data frame and making it feel spatial via the excellent {sf} package. By using a spatial data frame as data object of our leaflet call we are absolved from the need to specify longitude and latitude. This would be hassle (but doable) for points, but next to impossible for polygons.
-
 
 
 
@@ -121,29 +108,25 @@ palPwr <- leaflet::colorFactor(palette = c("MARG I" = "red",
                                domain = grantee.link$`Grant Type`)
 ```
 
+#  MARGs {-}
+The challenges with this version is that most of the grantee are from similar institute. Because the geographical positions are drawn from the institute location, all grantees from similar institute are displayed in single points. Then this makes the map interactive but the information are hard to grasp (Figure \@ref(fig:zero))
 
-
-```{r}
+```{r zero, include=T, fig.cap="All Grantees are mapped"}
 leaflet(data = grantee.link) %>%
   # addTiles() %>%
    addProviderTiles("CartoDB.Positron") %>%
   # addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~link) %>%
   addCircleMarkers(lng = ~Longitude, 
                    lat = ~Latitude, 
-                   popup = ~link,
-                   radius = 10, # size of the dots
-                   fillOpacity = .7, # alpha of the dots
-                   stroke = FALSE, # no outline
-                    color = palPwr(grantee.link$`Grant Type`),
-                   clusterOptions = markerClusterOptions()) %>% 
+                   popup = ~link) %>% 
   leaflet.extras::addResetMapButton()
 
 
 ```
 
+Although the (Figure \@ref(fig:zero)) allows you to pan, zoom in and out, grantee from similar institution are harder to distinguish them. To overcome this challenge, I clustered grantees and then provided a legend for grant. With color--coded, you can distinguish grantees based on the color of the legend, which indicate the grant type. With a popup message, you can get more details of the grantee linked to the image and the Google scholar page (figure \@ref(fig:one). You will notice that the Google scholar page and custom image are the same for all the grantee. I just made this as a default, and will change them once we get more information of each grantee. You can also suggest other information that you may prefer to appear to the grantee
 
-
-```{r}
+```{r one, fig.cap="Grantee are clustered and a legend distinguish grant type received"}
 
 margs_ver0 = leaflet(data = grantee.link) %>%
   # addTiles() %>%
@@ -167,12 +150,14 @@ margs_ver0 = leaflet(data = grantee.link) %>%
 margs_ver0
 ```
 
-The custom icon takes two steps:
 
-declaring the icon via the makeIcon() function from the {leaflet} package
-specifying the icon declared earlier in the icon argument of an addMarkers call
+Figure \@ref(fig:two) show similar feature to those in figure \@ref(fig:one) except that figure \@ref(fig:two) icon is customized with WIOMSA logo. We can discuss of the graphic or logo that better suits you.
 
 ```{r}
+# The custom icon takes two steps:
+# 
+# declaring the icon via the makeIcon() function from the {leaflet} package
+# specifying the icon declared earlier in the icon argument of an addMarkers call
 # declare an icon - link to an image somwehere on the net
 wiomsa.logo = leaflet::makeIcon(iconUrl = "https://www.wiomsa.org/wp-content/uploads/2019/02/WIOMSA-logo.png", # url to icon
                    iconWidth = 100, iconHeight = 61) # sizing as required
@@ -182,7 +167,8 @@ marg.icon = leaflet::makeIcon(iconUrl = "https://github.com/lugoga/wiomsa/blob/m
 
 ```
 
-```{r}
+
+```{r two, fig.cap="Grantee mapped with customized logo of WIOMSA"}
 
 
 margs_ver1= leaflet(data = grantee.link) %>%
@@ -201,7 +187,7 @@ margs_ver1
 
 
 
-```{r}
+```{r, include=FALSE}
 
 
 leaflet(data = grantee.link) %>%
@@ -217,9 +203,10 @@ leaflet(data = grantee.link) %>%
   leaflet.extras::addResetMapButton()
 ```
 
-In some use cases it might be desirable to create a radio button functionality (one, and only one, group can be selected at any time); this can be done by assigning the vector of groups to a baseGroups object of the addLayersControl instead of overlayGroups.
+In some use cases it might be desirable to display only a particular type of grantee. In this case I customized the map with a radio button functionality that allows you to display one or more grant type as shown in figure \@ref(fig:three). This interactive map allows you to toggle the basemap or the grant type you want to visualize. This makes easy to assess and analyse the spatial variation of grantee and the type of grant offered.
 
-```{r}
+
+```{r three, fig.cap="Grantted clustered with radio buttons "}
 
 margI = grantee.link %>% filter(`Grant Type` == "MARG I")
 margII = grantee.link %>% filter(`Grant Type` == "MARG II")
