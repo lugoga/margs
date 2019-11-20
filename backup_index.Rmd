@@ -1,13 +1,13 @@
 ---
-title: ""
-author: ""
+title: "Interactive Mapping of MARG Grantees"
+author: "Masumbuko Semba"
 date: ""
 output: 
   bookdown::html_document2
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, include = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 
@@ -111,10 +111,10 @@ palPwr <- leaflet::colorFactor(palette = c("MARG I" = "red",
                                domain = grantee.link$`Grant Type`)
 ```
 
-###  MARGs Interactive Maps {-}
-<!-- The challenges with this version is that most of the grantee are from similar institute. Because the geographical positions are drawn from the institute location, all grantees from similar institute are displayed in single points. Then this makes the map interactive but the information are hard to grasp (Figure \@ref(fig:zero)) -->
+#  MARGs {-}
+The challenges with this version is that most of the grantee are from similar institute. Because the geographical positions are drawn from the institute location, all grantees from similar institute are displayed in single points. Then this makes the map interactive but the information are hard to grasp (Figure \@ref(fig:zero))
 
-```{r zero, fig.cap="All Grantees are mapped"}
+```{r zero, include=T, fig.cap="All Grantees are mapped"}
 leaflet(data = grantee.link) %>%
   # addTiles() %>%
    addProviderTiles("CartoDB.Positron") %>%
@@ -127,7 +127,7 @@ leaflet(data = grantee.link) %>%
 
 ```
 
-<!-- Although the (Figure \@ref(fig:zero)) allows you to pan, zoom in and out, grantee from similar institution are harder to distinguish them. To overcome this challenge, I clustered grantees and then provided a legend for grant. With color--coded, you can distinguish grantees based on the color of the legend, which indicate the grant type. With a popup message, you can get more details of the grantee linked to the image and the Google scholar page (figure \@ref(fig:one). You will notice that the Google scholar page and custom image are the same for all the grantee. I just made this as a default, and will change them once we get more information of each grantee. You can also suggest other information that you may prefer to appear to the grantee -->
+Although the (Figure \@ref(fig:zero)) allows you to pan, zoom in and out, grantee from similar institution are harder to distinguish them. To overcome this challenge, I clustered grantees and then provided a legend for grant. With color--coded, you can distinguish grantees based on the color of the legend, which indicate the grant type. With a popup message, you can get more details of the grantee linked to the image and the Google scholar page (figure \@ref(fig:one). You will notice that the Google scholar page and custom image are the same for all the grantee. I just made this as a default, and will change them once we get more information of each grantee. You can also suggest other information that you may prefer to appear to the grantee
 
 ```{r one, fig.cap="Grantee are clustered and a legend distinguish grant type received"}
 
@@ -154,7 +154,7 @@ margs_ver0
 ```
 
 
-<!-- Figure \@ref(fig:two) show similar feature to those in figure \@ref(fig:one) except that figure \@ref(fig:two) icon is customized with WIOMSA logo. We can discuss of the graphic or logo that better suits you. -->
+Figure \@ref(fig:two) show similar feature to those in figure \@ref(fig:one) except that figure \@ref(fig:two) icon is customized with WIOMSA logo. We can discuss of the graphic or logo that better suits you.
 
 ```{r}
 # The custom icon takes two steps:
@@ -206,10 +206,10 @@ leaflet(data = grantee.link) %>%
   leaflet.extras::addResetMapButton()
 ```
 
-At some cases, it might be desirable to display only a particular type of grantee. In this case I customized the map with a radio button function that allows you to display one or more grant type as shown in figure \@ref(fig:three). It also allows you to toggle the basemap or the type of grant you may wish to visualize. This makes easy to assess, analyse and understand how grantee are offered both in space and time.
+In some use cases it might be desirable to display only a particular type of grantee. In this case I customized the map with a radio button functionality that allows you to display one or more grant type as shown in figure \@ref(fig:three). This interactive map allows you to toggle the basemap or the grant type you want to visualize. This makes easy to assess and analyse the spatial variation of grantee and the type of grant offered.
 
 
-```{r three, include=T, fig.cap="Grantted clustered with radio buttons "}
+```{r three, fig.cap="Grantted clustered with radio buttons "}
 
 margI = grantee.link %>% filter(`Grant Type` == "MARG I")
 margII = grantee.link %>% filter(`Grant Type` == "MARG II")
@@ -245,22 +245,17 @@ margs_ver2 = leaflet() %>%
                             options = layersControlOptions(collapsed = FALSE)) %>% 
   leaflet.extras::addResetMapButton()
 
-margs_ver2
-# htmltools::save_html(html = marg.ver2, file = "version2.html")
+# margs_ver2
+htmltools::save_html(html = marg.ver2, file = "version2.html")
 ```
 
 
-### Recommendation {-}
-After a discussion with Mathias, three aspects were pointed out. These includes
-
-
-- use the color coded to distinguish Marg types
-- add the ribbon for years
-- set display to within the region
-- bring grantee back to the home institutions
-
-I worked on the suggestion and rendered another version of interactive map shown in Figure \@ref(fig:four).
-Figure \@ref(fig:four) distinguish grantee based on color---grant type. . With a popup message, you can get more details of the grantee linked to the image and the Google scholar page (figure \@ref(fig:four)). You notice that the Google scholar page and custom image are the same for all the grantee. That's is simply a provision, and will change this default information to the real ones once we obtain information of each grantee. You can also suggest other information that you may prefer to appear to the grantee.
+## Recommendation
+After a discussion with Mathias, we agree on three aspects
+use the color coded to distinguish Marg types
+add the ribbon for years
+set display to within the region
+bring the lady to Lamu
 
 ```{r}
 # prepare a palette - manual colors according to branch column
@@ -271,12 +266,53 @@ palPwr <- leaflet::colorFactor(palette = c("MARG I" = "red",
 ```
 
 
+```{r}
 
-```{r four, include=T, fig.cap="Grantee in clustered and individual are colour-coded based on the type of grant received"}
+leaflet(data = grantee.link) %>%
+  addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.Positron", group = "CART") %>%
+  ## add a layer of MARG I
+  addCircleMarkers(data = margI, lng = ~Longitude, 
+                   lat = ~Latitude, 
+                   popup = ~link,
+                   clusterOptions = markerClusterOptions(),
+                   radius = 10, # size of the dots
+                   fillOpacity = .7, # alpha of the dots
+                   stroke = FALSE, # no outline
+                   color = palPwr(margI$`Grant Type`),
+                   # icon = wiomsa.logo, 
+             group = "MARG I") %>% 
+  ## add a layer of MARG II
+  addCircleMarkers(data = margII, lng = ~Longitude, 
+                   lat = ~Latitude, 
+                   popup = ~link,
+                   clusterOptions = markerClusterOptions(),
+                   radius = 10, # size of the dots
+                   fillOpacity = .7, # alpha of the dots
+                   stroke = FALSE, # no outline
+                   color = palPwr(margII$`Grant Type`),
+                   # icon = wiomsa.logo, 
+             group = "MARG II") %>% 
+  ## add a layer of MARG III
+  addCircleMarkers(data = margIII, 
+             lng = ~Longitude, 
+             lat = ~Latitude, 
+             popup = ~link,
+             clusterOptions = markerClusterOptions(),
+             radius = 10, # size of the dots
+             fillOpacity = .7, # alpha of the dots
+             stroke = FALSE, # no outline
+             color = palPwr(margIII$`Grant Type`),
+             # icon = wiomsa.logo, 
+             group = "MARG III")%>% 
+  leaflet::addLayersControl(baseGroups = c("OSM", "CART"),
+                            overlayGroups = c("MARG I", "MARG II", "MARG III"),
+                            options = layersControlOptions(collapsed = TRUE)) %>% 
+  leaflet.extras::addResetMapButton()
+
+
 
 marg.ver3 =  leaflet(data = grantee.link) %>%
-  addProviderTiles("CartoDB.Positron", group = "CART") %>%
-  addTiles(group = "OSM") %>%
   addProviderTiles("CartoDB.Positron") %>%
   # setView(lng = 40.561352, lat = -15.120450, zoom = 4) %>%
   # setMaxBounds( lng1 = 13.35938,
@@ -299,13 +335,8 @@ marg.ver3 =  leaflet(data = grantee.link) %>%
             pal = palPwr, # palette declared earlier
             title = "Grant Type") %>%  # legend title 
   leaflet.extras::addResetMapButton() %>%
-  leaflet.extras::addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE) %>% 
-  leaflet::addLayersControl(baseGroups = c("CART", "OSM"),
-                            # overlayGroups = c("MARG I", "MARG II", "MARG III"),
-                            options = layersControlOptions(collapsed = FALSE))
+  leaflet.extras::addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE) 
 
-
-marg.ver3
-# htmltools::save_html(html = marg.ver3, file = "version3.html")
+htmltools::save_html(html = marg.ver3, file = "version3.html")
 ```
 
