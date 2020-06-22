@@ -3,7 +3,7 @@ title: "Marine Research Grants"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
-    vertical_layout: scroll
+    vertical_layout: fill
     social: [ "twitter", "facebook", "menu"]
     #source_code: embed
 ---
@@ -73,6 +73,28 @@ grantee = marg1 %>% select(2:3,5:11,13) %>%
 
 
 
+```
+
+
+```{r}
+margs2020 = readxl::read_excel("MARG I 2020.xlsx", sheet = 1)
+
+margs2020 = margs2020 %>% 
+  separate(col = coordinate, into = c("Latitude", "Longitude"),
+           sep = ",", remove = TRUE) %>%
+  select(Year = 2,1, Name = 3, `Research Title` = 8, 6,
+         Gender = 5, Institution = 10, Latitude, Longitude) %>%
+  mutate(focus = NA, Publication = NA,
+         focus = focus %>% as.character(),
+         Longitude = Longitude %>% as.numeric(),
+         Latitude = Latitude %>% as.numeric())
+```
+
+```{r, eval=TRUE}
+if (ncol(margs2020) == ncol(grantee))
+  
+  grantee = grantee %>%
+  bind_rows(margs2020)
 ```
 
 ```{r, include=FALSE}
@@ -300,11 +322,12 @@ grantee %>%
          Institution = replace(Institution, Institution=="KENYA MARINE AND FISHERIES RESEARCH INSTITUTE", "Kenya Marine and Fisheries Research Institute"),
          Institution = replace(Institution, Institution == "STATE UNIVERSITY OF ZANZIBAR",
                                "State University of Zanzibar"))%>%
-  select(Institution,`Grant Type`, Nationality, Gender, Year) %>%
+  select(Institution,`Grant Type`, Country = Nationality, Gender, Year) %>%
   rpivotTable(aggregatorName = "Count", 
-              cols = "Nationality", 
+              cols = "Country", 
               rows = "`Grant Type`", height = 800,
-              rendererName = "Heatmap",
+              rendererName = "Heatmap"
+              # vals = "Freq",
               # rendererName = "Table Barchart",
               )
 ```
@@ -312,29 +335,58 @@ grantee %>%
 Grantee
 =======================
 ```{r}
-grantee %>%
-  select(Year, Name, Nationality, Gender, Institution,`Grant Type`, `Research Title`) %>%
-  DT::datatable(rownames = FALSE)
+# grantee %>%
+#   separate(col = Name, into = c("Title", "Name"), sep = 3)%>%
+#   select(Year, Grant = `Grant Type`, Title, Grantee = Name, Gender, Country = Nationality, Institution, `Research Focus` = `Research Title`) %>%
+#   DT::datatable(rownames = FALSE, fillContainer = TRUE, callback = JS('table.page("next").draw(false);'), escape = FALSE)
+
+
+marg1.link = marg1 %>%
+  separate(col = Name, into = c("Title", "Name"), sep = 3) %>%
+  mutate(Contact = paste0('<a  target=_blank href=', Contact, '>', Name,'</a>' )) %>% 
+  select(Year, Grant = `Grant Type`, Title, Grantee = Contact, Gender, Country = Nationality, Institution, `Research Focus` = `Research Title`)
+
+marg2.link =    marg2 %>%
+  separate(col = `Full Name`, into = c("Title", "Name"), sep = 3) %>%
+  mutate(Contact = paste0('<a  target=_blank href=', Contact, '>', Name,'</a>' )) %>% 
+  select(Year, Grant = `Grant Type`, Title, Grantee = Contact, Gender, Country = Nationality, Institution = `Home Institution`, `Research Focus` = `Research Title`)
+
+marg3.link =  marg3 %>%
+  separate(col = `Full Name`, into = c("Title", "Name"), sep = 3) %>%
+  mutate(Contact = paste0('<a  target=_blank href=', Contact, '>', Name,'</a>' )) %>% 
+  select(Year, Grant = `Grant Type`, Title, Grantee = Contact, Gender, Country = Nationality, Institution = `Home Institution`, `Research Focus` = focus)
+
+marg1.2020.link =margs2020 %>%
+  # separate(col = Name, into = c("Title", "Name"), sep = 3) %>%
+  mutate(Title = "", email = "",Contact = paste0('<a  target=_blank href=', email, '>', Name,'</a>')) %>% 
+  select(Year, Grant = `Grant Type`, Title, Grantee = Contact, Gender, Country = Nationality, Institution, `Research Focus` = focus)
+
+margs.binded = marg1.link %>%
+  bind_rows(marg2.link, marg3.link, marg1.2020.link)
+
+
+margs.binded %>%
+  DT::datatable(rownames = FALSE, fillContainer = TRUE, callback = JS('table.page("next").draw(false);'), escape = FALSE)
+
+
 ```
 
 
-Map
+Map 
 ===============================
 
-This is an interactive map that shows MARG beneficiers. You can zoom and pan to the area of intereste with the western indian ocean region using the tools on top right corner
 
 ```{r}
 
 leaflet(data = grantee.link) %>%
   addProviderTiles("CartoDB.Positron") %>%
   addProviderTiles("CartoDB.Positron", group = "CART") %>%
-  addTiles(group = "OSM") %>%
-  addPolygons(data = wio, group = "WIO") %>%
-  setView(lng = 39.685486, lat = -4.053337, zoom = 13) %>%
+  addTiles(group = "OSM")  %>%
+  setView(lng = 40, lat = -10, zoom = 3.5) %>%
   # setMaxBounds( lng1 = 14,
   #               lat1 = -30,
-  #               lng2 = 74,
-  #               lat2 = 15 )%>%
+  #               lng2 = 50,
+  #               lat2 = 5)%>%
   addCircleMarkers(lng = ~Longitude, 
                    # fillColor = palPwr(grantee.link$`Grant Type`),
                    lat = ~Latitude, 
@@ -351,32 +403,88 @@ leaflet(data = grantee.link) %>%
             pal = palPwr, # palette declared earlier
             title = "Grant Type") %>%  # legend title 
   leaflet.extras::addResetMapButton() %>%
-  leaflet.extras::addFullscreenControl(position = "topleft", pseudoFullscreen = FALSE) %>% 
-  leaflet::addLayersControl(baseGroups = c("CART", "OSM", "WIO"),
+  leaflet.extras::addFullscreenControl(position = "topleft", pseudoFullscreen = TRUE) %>% 
+  leaflet::addLayersControl(baseGroups = c("WIO REGION","CARTO", "OSM"),
                             # overlayGroups = c("MARG I", "MARG II", "MARG III"),
-                            options = layersControlOptions(collapsed = FALSE))
+                            options = layersControlOptions(collapsed = FALSE))%>%
+  addPolygons(data = wio, group = "WIO", 
+    highlight = highlightOptions(
+      color = "darkorange",
+      bringToFront = TRUE, weight = 05,
+    ))
+
+
+
 ```
 
 
+```{r, eval=FALSE}
+country.grantee = grantee %>% 
+  filter(Nationality %in% c("Kenya", "Madagascar", "Mauritius", "Mozambique", "Seychelles", "South Africa", "Tanzania")) %>% 
+  janitor::clean_names() %>% 
+  group_by(year, nationality) %>% 
+  count() %>% 
+  ungroup() %>% 
+  pivot_wider(values_from = n, names_from = nationality)
+  
+
+
+require(plotly)
+ country.grantee.cumsum = country.grantee %>%
+  mutate(Kenya = cumsum(Kenya),
+         Madagascar = cumsum(Madagascar),
+         Mauritius = cumsum(Mauritius),
+         Mozambique = cumsum(Mozambique),
+         `South Africa` = cumsum(`South Africa`),
+         Tanzania = cumsum(Tanzania)) %>% 
+  pivot_longer(cols =2:7, names_to = "country", values_to = "cumsum" ) %>% 
+  arrange(country, year)
+
+naming = country.grantee.cumsum %>% group_by(country) %>% slice(3)
+ 
+ naming$cumsum[5] = 9
+  naming$year[5] = 2019
+
+
+aaa = country.grantee.cumsum %>%
+  ggplot(aes(x = year, y = cumsum, col = country)) +
+  geom_line() +
+  geom_point()+
+  ggrepel::geom_text_repel(data = naming,
+                           aes(x = year, y = cumsum, label = country),nudge_x = 0.3, nudge_y = 0.3)+
+  theme(legend.position = "none")
+
+ggplotly(aaa)
+
+```
+
 About
 =========
-This dashboard was developed and created by Semba Masumbuko using **flexdashboard** package in R programming language and is the copyright of WIOMSA. This work used other open source software components. The following is a list of these components (full copies of the license agreements used by these components are included below):
+This dashboard provides interactive plots and maps that highlight Marine Research Grants (MARGS) work in the Western Indian Ocean Region to access. The dashboard is under active development engineered by [Benjamin Mpinga](benjaminindrw@gmail.com) and [Masumbuko Semba](lugosemba@gmail.com). We are thankful to  WIOMSA for financial support to develop this interactive tool. We also express our profound gratitude to Richard Iannone and his colleagues for developing a **flexdashboard** platform that serve as the backbone of this tool. We have used several open source tools during the development stage and we can not mention them all in this section, we cited some of their work listed heredown;
 
-- rmarkdown
-- knitr
-- DT
-- rpivotTable
-- tidyverse
-- plotly
-- dplyr
-- openintro
-- highcharter
-- ggvis
-- leaflet
-- sf
-- highcharter
-- viridisLite
-- forecast
-- treemap
+
+1. Yihui Xie and J.J. Allaire and Garrett Grolemund (2018). R   Markdown: The Definitive Guide. Chapman and Hall/CRC. ISBN   9781138359338. URL https://bookdown.org/yihui/rmarkdown.
+
+1. Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible   Research in R. In Victoria Stodden, Friedrich Leisch and Roger D. Peng, editors, Implementing Reproducible Computational   Research. Chapman and Hall/CRC. ISBN 978-1466561595
+
+1. Yihui Xie, Joe Cheng and Xianying Tan (2020). DT: A Wrapper of the JavaScript Library 'DataTables'. R package version 0.13. https://CRAN.R-project.org/package=DT
+
+1. Enzo Martoglio (2018). rpivotTable: Build Powerful Pivot Tables and Dynamically Slice & Dice your Data. R package version 0.3.0. https://CRAN.R-project.org/package=rpivotTable
+
+1. D'Agostino McGowan and Romain François and Garrett Grolemund and Alex Hayes and Lionel Henry and Jim Hester and Max Kuhn and Thomas Lin Pedersen and Evan Miller and Stephan Milton Bache and Kirill Müller and Jeroen Ooms and David Robinson and Dana Paige Seidel and Vitalie Spinu and Kohske Takahashi and Davis Vaughan and Claus Wilke and Kara Woo and Hiroaki Yutani (2019). Welcome to the tidyverse. *Journal of Open Source Software*, 4(43), 1686, https://doi.org/10.21105/joss.01686
+  
+1. Carson  Sievert (2020). Interactive Web-Based Data Visualization with R,plotly, and shiny. Chapman and Hall/CRC Florida, .
+
+1. Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2020). dplyr: A Grammar of Data Manipulation. R package version 1.0.0. https://CRAN.R-project.org/package=dplyr
+
+1. David M Diez, Christopher D Barr and Mine Cetinkaya-Rundel (2017). openintro: Data Sets and Supplemental Functions from 'OpenIntro' Textbooks. R package version 1.7.1. https://CRAN.R-project.org/package=openintro
+
+1. Joshua Kunst (2019). highcharter: A Wrapper for the 'Highcharts' Library. R package version 0.7.0.
+  https://CRAN.R-project.org/package=highcharter
+  
+1. Joe Cheng, Bhaskar Karambelkar and Yihui Xie (2019). leaflet: Create Interactive Web Maps with the JavaScript 'Leaflet' Library. R package version 2.0.3. https://CRAN.R-project.org/package=leaflet.
+
+1. Pebesma, E., (2018). Simple Features for R: Standardized Support for Spatial Vector Data. *The R Journal* 10 (1), 439-446, https://doi.org/10.32614/RJ-2018-009.
+
 
 
